@@ -5,6 +5,17 @@ import db from '$lib/db.js';
 export const GET = () => {
     const stmt = db.prepare(`SELECT * FROM scores ORDER BY score DESC, xten DESC`);
     const users = stmt.all();
+    let filteredUsers = [...users];
+
+    filteredUsers.forEach((t: any)=>{
+        t.username = t.username.slice(0,1)+'*'+t.username.slice(2);
+        if (t.contact.includes('010')) {
+            t.contact = `010-****-${t.contact.slice(7)}`;
+        } else if (t.contact.includes('@')) {
+            t.contact = t.contact.replace(/(?<=^\w{3})[\w.]+(?=@.*)/, '*');
+        }
+    })
+    console.log(filteredUsers);
     return json(users);
 };
 
