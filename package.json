@@ -2,7 +2,7 @@
 	"name": "quest-sqlite-sveltekit",
 	"version": "0.0.1",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite dev --port 8086",
 		"build": "vite build && npm run package",
 		"preview": "vite preview",
 		"package": "svelte-kit sync && svelte-package && publint",
@@ -52,6 +52,8 @@
 		"better-sqlite3": "^11.5.0",
 		"body-parser": "^1.20.3",
 		"cors": "^2.8.5",
-		"express": "^4.21.1"
+		"express": "^4.21.1",
+		"socket-io": "^1.0.0",
+		"socket.io": "^4.8.1"
 	}
 }

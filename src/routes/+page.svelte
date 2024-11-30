@@ -21,9 +21,33 @@
     let score: number | string = 0;
     let xten: number | string = 0;
 
+    let receivedMessages: string[] = [];
+    let socket: WebSocket;
+
     async function getScore() {
         const response = await fetch('/api/scores');
         scores = await response.json();
+    }
+
+    async function firstMount() {
+        await getScore();
+        // WebSocket 서버에 연결
+        socket = new WebSocket('ws://localhost:8086');
+
+        // 서버로부터 메시지 수신
+        socket.onmessage = (event) => {
+            const data = event.data;
+            console.log('서버로부터 메시지 수신:', data);
+
+            // 메시지를 배열에 추가
+            receivedMessages = [...receivedMessages, data];
+        };
+
+        // 연결 해제 시 정리
+        return () => {
+            socket.close();
+        };
+
     }
 
     onMount(getScore);
