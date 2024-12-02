@@ -1,46 +1,65 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import io from 'socket.io-client';
 
-    let receivedMessages: string[] = [];
-    let socket: WebSocket;
+    let messages: string[] = [];
+    let message: string = '';
+    let socket: any;
 
     onMount(() => {
-        socket = new WebSocket('ws://127.0.0.1:8087');
+        // Socket.IO 서버에 연결
+        socket = io('http://localhost:8087');
 
-        socket.onopen = () => {
-            console.log('WebSocket 연결 성공');
-        };
+        // 연결 성공 시
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+        });
 
-        socket.onmessage = (event) => {
-            const data = event.data;
-            console.log('서버로부터 메시지 수신:', data);
-            receivedMessages = [...receivedMessages, data];
-        };
+        // 메시지 수신
+        socket.on('chat message', (msg: any) => {
+            messages = [...messages, msg];
+        });
 
-        socket.onerror = (error) => {
-            console.error('WebSocket 연결 오류:', error);
-        };
+        // 연결 해제 시
+        socket.on('disconnect', () => {
+            console.log('Disconnected from WebSocket server');
+        });
 
         return () => {
-            socket.close();
+            // 컴포넌트가 파괴될 때 소켓 연결 해제
+            socket.disconnect();
         };
     });
 
-
-    // 메시지 전송
-    function sendMessage() {
-        const message = "SvelteKit에서 보낸 메시지";
-        socket.send(message);
-        console.log('서버로 메시지 전송:', message);
-    }
+    const sendMessage = () => {
+        if (message) {
+            socket.emit('chat message', message);
+            message = '';
+        }
+    };
 </script>
 
-<h1>실시간 WebSocket 통신</h1>
+<style>
+    .messages {
+        list-style: none;
+        padding: 0;
+    }
+    .messages li {
+        margin-bottom: 0.5rem;
+    }
+</style>
 
-<button on:click={sendMessage}>메시지 전송</button>
-
-<ul>
-    {#each receivedMessages as message}
-        <li>{message}</li>
+<h1>Chat</h1>
+<ul class="messages">
+    {#each messages as msg}
+        <li>{msg}</li>
     {/each}
 </ul>
+
+<input
+        type="text"
+        bind:value={message}
+        placeholder="Type a message..."
+        on:keydown={(e) => e.key === 'Enter' && sendMessage()}
+/>
+<button on:click={sendMessage}>Send</button>

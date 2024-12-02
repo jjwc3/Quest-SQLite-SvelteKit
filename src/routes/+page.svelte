@@ -6,6 +6,7 @@
 
 <script lang="ts">
     import {onMount} from "svelte";
+    import io from 'socket.io-client';
 
     interface Score {
         id: number;
@@ -20,37 +21,49 @@
     let contact: string = "";
     let score: number | string = 0;
     let xten: number | string = 0;
+    let tempScore: number | string = 0;
+    let tempXten: number | string = 0;
 
-    let receivedMessages: string[] = [];
-    let socket: WebSocket;
+    let socket: any;
+
+    const connectWebsocket = () => {
+        // Socket.IO 서버에 연결
+        socket = io('http://localhost:8087');
+
+        // 연결 성공 시
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+        });
+
+        // 메시지 수신
+        socket.on('chat message', (msg: any) => {
+            const data = JSON.parse(msg);
+            tempScore = data.score;
+            tempXten = data.xten;
+        });
+
+        // 연결 해제 시
+        socket.on('disconnect', () => {
+            console.log('Disconnected from WebSocket server');
+        });
+
+        return () => {
+            // 컴포넌트가 파괴될 때 소켓 연결 해제
+            socket.disconnect();
+        };
+    }
 
     async function getScore() {
         const response = await fetch('/api/scores');
         scores = await response.json();
     }
 
-    async function firstMount() {
+    async function mountFunction() {
         await getScore();
-        // WebSocket 서버에 연결
-        socket = new WebSocket('ws://localhost:8086');
-
-        // 서버로부터 메시지 수신
-        socket.onmessage = (event) => {
-            const data = event.data;
-            console.log('서버로부터 메시지 수신:', data);
-
-            // 메시지를 배열에 추가
-            receivedMessages = [...receivedMessages, data];
-        };
-
-        // 연결 해제 시 정리
-        return () => {
-            socket.close();
-        };
-
+        connectWebsocket();
     }
 
-    onMount(getScore);
+    onMount(mountFunction);
 
     async function setScore() {
         let isError: boolean = false;
@@ -89,6 +102,11 @@
     function both() {
         setScore();
         getScore();
+    }
+
+    function tempImport() {
+        score = tempScore;
+        xten = tempXten;
     }
 </script>
 
@@ -131,6 +149,8 @@
             </div>
 
             <input type="submit" class="bg-white text-slate-900 border border-slate-200 shadow-xl hover:bg-gray-50 ease-in-out duration-200 rounded-md px-4 w-full" value="등록" on:click={both}>
+            <input type="submit" class="bg-white text-slate-900 border border-slate-200 shadow-xl hover:bg-gray-50 ease-in-out duration-200 rounded-md px-4 w-full mt-3" value="불러오기: {tempScore}/{tempXten}" on:click={tempImport}>
+
             <p id="error" class="text-red-600 text-center mt-2" style="display: none">모든 정보를 입력해주세요</p>
         </div>
     </form>
